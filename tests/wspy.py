@@ -7,31 +7,41 @@ import psutil
 import threading
 import time
 
+# This tkinter application is a window spy that allows you to select a window and then follow the mouse cursor over it.
+# It is used to obtain debug information over an specific window of an application, so you can easily obtain coordinates
+# to program click positions, or "ocr text-reading bounding boxes".
+
+# This is meant to be an utility tool, copied/based off "Window Spy" from AUTO HOT KEY.
+
+# Special thanks to youtube.com/@AsphaltCake, his 4 hours Autofish Macro tutorial was useful.
+
 class WindowSpy:
-    def __init__(self, root):
+    def __init__(self, root):        
         self.root = root
-        self.root.title("Window Info Reader")
+        self.root.title("Window Spy")
         self.root.geometry("600x700")
         self.root.minsize(500, 500)
         
+        # random
         self.counter=0
         
-        # Variáveis
+        # variables
         self.selected_window = None
         self.follow_mouse = tk.BooleanVar()
         self.tooltip_toggle = tk.BooleanVar()
         self.tooltips = {}
         
+        # specific config, dont change unless you know what you're doing
         self.config = {
             "WINDOW_CLIENT_X_OFFSET": 8,
             "WINDOW_CLIENT_Y_OFFSET": 31,
-            "MAIN_UPDATE_LOOP_INTERVAL_MS": 100,
+            "MAIN_UPDATE_LOOP_INTERVAL_MS": 250,
         }
 
-        # Widgets
+        # widgets
         self.setup_ui()
 
-        # Thread para atualização contínua
+        # continuous update thread
         self.running = True
         self.update_thread = threading.Thread(target=self.main_update_loop, daemon=True)
         self.update_thread.start()
@@ -39,7 +49,7 @@ class WindowSpy:
     def setup_ui(self):
         monospace_font = ("Courier", 10)
         
-        # Seção de sistema
+        # system section
         section_system = tk.LabelFrame(self.root, text="System Information", padx=10, pady=10)
         section_system.pack(fill="x", padx=10, pady=5)
 
@@ -47,7 +57,7 @@ class WindowSpy:
         self.system_info_label.config(font=monospace_font)
         self.system_info_label.pack(fill="both")
 
-        # Seção de aplicação
+        # application section
         section1 = tk.LabelFrame(self.root, text="Application", padx=10, pady=10)
         section1.pack(fill="x", padx=10, pady=5)
 
@@ -62,25 +72,24 @@ class WindowSpy:
         self.follow_mouse_cb = tk.Checkbutton(frame_app, text="Follow Mouse", variable=self.follow_mouse)
         self.follow_mouse_cb.pack(side="right", padx=5)
 
-        # Checkbox para mostrar tooltip (agora na seção de aplicação)
         self.tooltip_cb = tk.Checkbutton(
             frame_app, text="Show Tooltip", variable=self.tooltip_toggle, command=self.update_tooltip_visibility
         )
         self.tooltip_cb.pack(side="right", padx=5)
 
-        # Seção de processo
+        # process section
         self.section_process = self.create_scrollable_section("Process", height=5)
         self.process_info_label = tk.Label(self.section_process.inner_frame, text="No process selected", justify="left", anchor="w")
         self.process_info_label.config(font=monospace_font)
         self.process_info_label.pack(fill="both", padx=5, pady=5)
 
-        # Seção de janela
+        # window section
         self.section_window = self.create_scrollable_section("Window", height=5)
         self.window_info_label = tk.Label(self.section_window.inner_frame, text="No window selected", justify="left", anchor="w")
         self.window_info_label.config(font=monospace_font)
         self.window_info_label.pack(fill="both", padx=5, pady=5)
 
-        # Seção de informações do mouse
+        # mouse info section
         self.section_mouse = self.create_scrollable_section("Mouse Information", height=5)
         self.mouse_info_label = tk.Label(self.section_mouse.inner_frame, text="Mouse information will appear here", justify="left", anchor="w")
         self.mouse_info_label.config(font=monospace_font)
@@ -172,12 +181,6 @@ class WindowSpy:
         """Atualiza o texto da label da tooltip."""
         if label:  # Verifica se a label existe antes de tentar configurar o texto
             label.config(text=text)
-                    
-    def destroy_tooltip(self):
-        """Destrói a tooltip caso ela esteja visível."""
-        if self.tooltip_window:
-            self.tooltip_window.destroy()
-            self.tooltip_window = None  # Limpa a referência para garantir que a tooltip seja recriada na próxima vez
 
     def main_update_loop(self):
         while self.running:
