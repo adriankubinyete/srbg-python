@@ -6,6 +6,7 @@ import pyautogui
 import psutil
 import threading
 import time
+from PIL import ImageGrab # for pixel color
 
 # This tkinter application is a window spy that allows you to select a window and then follow the mouse cursor over it.
 # It is used to obtain debug information over an specific window of an application, so you can easily obtain coordinates
@@ -232,7 +233,10 @@ class WindowSpy:
             CLIENT_Y_OFFSET = self.config.get('CLIENT_Y_OFFSET', 31)
             mouse_x, mouse_y = pyautogui.position()
 
-            screen_info = f'x: {mouse_x:<4} y: {mouse_y:<4}'
+            screen = ImageGrab.grab()
+            color_at_mouse = screen.getpixel((mouse_x, mouse_y))
+
+            screen_info = f'x: {mouse_x:<4} y: {mouse_y:<4}, RGB: {color_at_mouse}'
 
             if self.selected_window and not self.selected_window.isMinimized:
                 # window and invisible margin (not recommended)
@@ -249,62 +253,31 @@ class WindowSpy:
                 client_y = mouse_y - (self.selected_window.top + CLIENT_Y_OFFSET) if self.selected_window else 0
                 client_info = f"x: {client_x:<4} y: {client_y:<4} w: {client_w:<4} h: {client_h:<4} (recommended)"
                 
-                # test_data
-                
-                # # ratio
-                # pct_x = window_h / mouse_x if mouse_x != 0 else 0
-                # pct_y = window_w / mouse_y if mouse_y != 0 else 0
-                
-                # # points
-                # rel_x = window_w / pct_x if pct_x != 0 else 0
-                # rel_y = window_h / pct_y if pct_y != 0 else 0
-                
-                # ratio_info = f"x: {pct_x:.4f} y: {pct_y:.4f}"
-                # relative_info = f"x: {rel_x:.4f} y: {rel_y:.4f}"
-                                
-                
-                # those magic numbers came from  from testing positions on my native resolution which is 1920x1080
-                
-                # window_w / 1628 = 1,1891
-                # window_h / 991 = 1,0575
-                # print(f'mx: {client_x} my: {client_y} w: {window_w} h: {window_h}')
-                magic_x = 1.1891
-                magic_y = 1.0575
-                
-                magic_from_source = window_w / client_x if client_x != 0 else 0
-                magic_from_source_y = window_h / client_y if client_y != 0 else 0
-                mi = f"x: {magic_x:.4f} y: {magic_y:.4f}"
-                mfsi = f"x: {magic_from_source:.4f} y: {magic_from_source_y:.4f}"
-                            
-                rel_x = window_w / 1.1891
-                rel_y = window_h / 1.0575
-                relative_info = f"x: {rel_x:.4f} y: {rel_y:.4f}"
-                
-                # now transforming this relative coordinate into absolute for my monitor
-                abs_x = rel_x + self.selected_window.left + CLIENT_X_OFFSET
-                abs_y = rel_y + self.selected_window.top + CLIENT_Y_OFFSET
-                abs_info = f"x: {abs_x:.4f} y: {abs_y:.4f}"
-                
-                self.tooltip("1", 200, 100, f'  MI: {mi}')
-                self.tooltip("2", 200, 200, f'MFSI: {mfsi}')
+                # scaling factor ( use this to get positions/coordinates )
+                scaling_factor_x = window_w / client_x if client_x != 0 else 0
+                scaling_factor_y = window_h / client_y if client_y != 0 else 0
+                scaling_info = f"\n x: {window_w} / {scaling_factor_x:.4f}\n y: {window_h} / {scaling_factor_y:.4f}"
+                        
+                # self.tooltip("1", 200, 100, f'       MI: {mi}')
+                # self.tooltip("2", 200, 120, f'     MFSI: {mfsi}')
+                # self.tooltip("3", 200, 140, f'   Client: x: {client_x:.4f} y: {client_y:.4f}')
+                # self.tooltip("4", 200, 160, f'  Reverse: x: {reverse_x:.4f} y: {reverse_y:.4f}')
+                # self.tooltip("5", 200, 180, f'  X: {window_w} / {scaling_factor_x:.4f}')
+                # self.tooltip("6", 200, 200, f'  Y: {window_h} / {scaling_factor_y:.4f}')
 
                 
             elif self.selected_window and self.selected_window.isMinimized:
-                window_info = client_info = ratio_info = relative_info = abs_info = mi = mfsi = "Minimized"
+                window_info = client_info = scaling_info = "Minimized"
             else:
-                window_info = client_info = ratio_info = relative_info = abs_info = mi = mfsi = "Not selected"
+                window_info = client_info = scaling_info = "Not selected"
 
             
 
             mouse_info = (
-                f"Screen: {screen_info}\n"
-                f"Window: {window_info}\n"
-                f"Client: {client_info}\n"
-                # f"Ratio: {ratio_info}\n"
-                f"Relative: {relative_info}\n"
-                f"Absolute: {abs_info}\n"
-                f"\n  MI: {mi}\n"
-                f"MFSI: {mfsi}\n"
+                f" Screen : {screen_info}\n"
+                f" Client : {client_info}\n"
+                f" Window : {window_info}\n"
+                f"Scaling : {scaling_info}\n"
             )
             self.update_label(self.mouse_info_label, mouse_info)
         else:
