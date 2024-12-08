@@ -224,13 +224,12 @@ class Screenshot:
             }
         }
 
-    def find_image(self, template=None, template_path=None, threshold=0.81):
+    def find_image(self, template=None, template_path=None, window_size = {'width': 1920, 'height': 1080}, threshold=0.81):
         """
-        Localize a posição de uma imagem (template) dentro da imagem base (self.image).
-
         Args:
             template (np.array, optional): Imagem já carregada como array numpy.
             template_path (str, optional): Caminho para o arquivo da imagem template.
+            window_size (dict): Tamanho da janela para respeitar a aspect-ratio da imagem que está procurando.
             threshold (float): Confiança mínima para considerar o match.
 
         Returns:
@@ -267,12 +266,10 @@ class Screenshot:
             new_height = int(image.shape[0] * scale_factor)
             return cv2.resize(image, (new_width, new_height))
 
-        # Assumir resolução padrão 1920x1080
-        respect = {'width': 1920, 'height': 1080}
         template_resized = resize_to_target(
             template,
-            original_size={"width": 1920, "height": 1080},
-            target_size=respect
+            original_size={"width": 1920, "height": 1080}, # ill assume every template was made on my res :)
+            target_size=window_size
         )
 
         # Converter ambas as imagens para escala de cinza
