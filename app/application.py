@@ -11,6 +11,18 @@ import os
 import pickle
 import base64
 
+
+# update 12/15/2024 06:53AM
+# ive been working 6hr straight on this
+# my brain is fried, i dont care about the code quality anymore
+# everything was beautiful in the start, now its a hacky mess, i dont care anymore as long as it works
+#
+# send me a refactor pull request and ill most likely accept it
+#
+# @NOTE(to myself): PLEASE refactor widgets.settingstab, SettingsTab._create_tab looks UGLY AS SHIT. Also, I want that save button OUT of the fucking canvas.
+# Also while you're at it, refactor Application.setup_ui too, those import/export buttons are looking messy in code.
+
+
 class Application:
     def __init__(self, root):
         self.root = root
@@ -19,6 +31,24 @@ class Application:
         self.root.minsize(400, 300)
         
         self.config = {
+            'properties': {
+                'ROBLOX': {
+                    'PRIVATE_SERVER_URL': None,
+                },
+                'DISCORD': {
+                    'WEBHOOK_URL': None,
+                    'MENTIONS': None,
+                },
+                'INTERNAL': {
+                    'TEST_ONE': None,
+                    'TEST_TWO': None,
+                    'TEST_THREE': None,
+                    'TESTING': {
+                        'POTATO': '1',
+                        'BATATA': 1
+                    }
+                }
+            },
             'biomes': {
                 
                 'Glitched': {
@@ -119,26 +149,6 @@ class Application:
                 }
                 
             },
-            
-            'properties': {
-                'ROBLOX': {
-                    'PRIVATE_SERVER_URL': None,
-                },
-                'DISCORD': {
-                    'WEBHOOK_URL': None,
-                    'MENTIONS': None,
-                },
-                'INTERNAL': {
-                    'TEST_ONE': None,
-                    'TEST_TWO': None,
-                    'TEST_THREE': None,
-                    'TESTING': {
-                        'POTATO': '1',
-                        'BATATA': 1
-                    }
-                }
-            }
-            
         }
         
         # Criação da interface
@@ -205,6 +215,9 @@ class Application:
             self.biome_checkbox_table.set_values(BIOME_CONFIG) # use the retrieved checkboxes to update ours
             self.settings_tab.update(config)
             self.config = config
+            
+            # TODO(adrian):
+            # this should actually merge the default config with the loaded config because there could be new keys in default that isnt available in loaded (lets say, an update for instance). so the user should have the default values available for them.
             
             # Retorna a configuração restaurada
             return config
