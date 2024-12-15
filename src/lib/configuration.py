@@ -20,7 +20,7 @@ class Configuration:
         }
         
         self.roblox = {
-            "private_server_link": "https://www.roblox.com/games/15532962292/Sols-RNG-Era-9?privateServerLinkCode=83338549084739556308838773836658",
+            "private_server_link": "https://www.roblox.com/games/15532962292/Sols-RNG-Eon1-1?privateServerLinkCode=92396730496003660286835807334839",
         }
         
         self.discord = {

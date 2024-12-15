@@ -17,16 +17,14 @@ import keyboard
 import asyncio
 # local lib
 from lib.configuration import CONFIGURATION
+from utils.screenutils import ScreenUtils
 
 
-class System:
+class System(ScreenUtils):
     
     
     def __init__(self):
-        # tesseract things
-        self.TESSERACT_INSTALL_PATH = r'C:\Program Files\Tesseract-OCR'
-        self.TESSERACT_COMMAND = self.TESSERACT_INSTALL_PATH + r'\tesseract.exe'
-        pytesseract.pytesseract.tesseract_cmd = self.TESSERACT_COMMAND
+        super().__init__()
         
         # general things
         self.mouse = None
@@ -38,7 +36,7 @@ class System:
         keyboard.on_press(self._on_key_press)
         self.key_callbacks = {}
         self.register_shortcut(CONFIGURATION.shortcuts['STOP_APPLICATION'], self.__stop_application)
-        self.register_shortcut(CONFIGURATION.shortcuts['OCR_SCREENSHOT_TEST'], self.__ocr_screenshot_test)
+        # self.register_shortcut(CONFIGURATION.shortcuts['OCR_SCREENSHOT_TEST'], self.__ocr_screenshot_test)
         
         
     # --- TEST KEY MONITORING -----------------------------------------------
@@ -110,7 +108,6 @@ class System:
     
     # --- INFORMATION -------------------------------------------------------
     
-    
     def get_screen_resolution(self):
         # get the primary monitor
         primary_monitor = get_monitors()[0]
@@ -141,271 +138,6 @@ class System:
         
         return None  # Caso nenhum monitor seja encontrado
         
-    # --- SCREENSHOTS RELATED -------------------------------------------------------
-    
-    
-    ''' 
-    top_left = [x, y]
-    bottom_right = [x, y]
-    example: screenshot( [100,200], [200,300] )
-    '''
-    def screenshot(self, top_left, bottom_right):
-        # extract coordinates
-        left, top = top_left
-        right, bottom = bottom_right
-        
-        # rounding, just in case
-        left = round(left)
-        right = round(right)
-        top = round(top)
-        bottom = round(bottom)
-        
-        # calculate width and height based on coordinates
-        width = right - left
-        height = bottom - top
-
-        with mss.mss() as sct:
-            # region to capture
-            region = {
-                "top": top,
-                "left": left,
-                "width": width,
-                "height": height
-            }
-            
-            # actually captures
-            screenshot = sct.grab(region)
-            
-            
-            # transforms the image in a np array
-            img = np.array(screenshot)
-            if img.size == 0:
-                # we cant convert the channels of an empty image, so if the image is really empty, we just throw. probably tried screenshotting a minimized window
-                raise Exception(f"Screenshot area is out of bounds! {region}")
-
-            # transforms from RGBA to BGR, because OpenCV works with BGR by default
-            img_bgr = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
-            return {
-                "region": region,
-                "image": img_bgr
-            }
-
-
-    '''
-    screenshot : complete self.screenshot() dictionary.
-    base_image_path : file path to image for matching in screenshot
-    respect: roblox window size to determine if we need to rescale the base image. should be a dictionary containing width and height
-    TODO(adrian): make this deal with scaling issues. base images are on 1920x1080, but screenshots can be on different resolutions and match should account for that
-        '''
-    def find_image_in_screenshot(self, screenshot, base_image_path, respect, threshold=0.81):
-        
-        '''
-        template_image : path to template image
-        template_size  : dictionary {width, height}
-        target_size    : dictionary {width, height}
-        '''
-        def resize_template_to_aspect_ratio(template_image, template_size, target_size):
-            template_image = cv2.imread(base_image_path)
-            TEMPLATE_ASPECT_RATIO = template_size['width'] / template_size['height']
-            TARGET_ASPECT_RATIO = target_size['width'] / target_size['height']
-            
-            print(f"DEBUG: TEMPLATE_ASPECT_RATIO: {TEMPLATE_ASPECT_RATIO}")
-            print(f"DEBUG: TARGET_ASPECT_RATIO: {TARGET_ASPECT_RATIO}")
-            
-            # check if we have to mess with the aspect ratio of the image
-            if TARGET_ASPECT_RATIO > TEMPLATE_ASPECT_RATIO:
-                SCALE_FACTOR = target_size['height'] / template_size['height']
-            else:
-                SCALE_FACTOR = target_size['width'] / template_size['width']
-            
-            # resize the image if needed, and return
-            NEW_WIDTH = int(template_image.shape[1] * SCALE_FACTOR)
-            NEW_HEIGHT = int(template_image.shape[0] * SCALE_FACTOR)
-            
-            RESIZED_TEMPLATE_IMAGE = cv2.resize(template_image, (NEW_WIDTH, NEW_HEIGHT))
-            
-            return RESIZED_TEMPLATE_IMAGE
-            
-        REGION = screenshot['region']
-        IMAGE = screenshot['image']
-        RESPECT = respect
-
-        # beware: im assuming every template was made on 1920x1032 (aka 1920x1080 with taskbar and header)
-        resized_base_image = resize_template_to_aspect_ratio(base_image_path, {"width": 1920, "height": 1032}, RESPECT)
-
-        #converting both to grayscale
-        gray_screenshot = cv2.cvtColor(IMAGE, cv2.COLOR_RGB2GRAY)  # Screenshot em RGB
-        gray_base_image = cv2.cvtColor(resized_base_image, cv2.COLOR_BGR2GRAY)  # Template em BGR
-
-        # #dimensions of resized image
-        base_height, base_width = gray_base_image.shape
-
-        # #actual matching
-        # result = cv2.matchTemplate(gray_screenshot, gray_base_image, cv2.TM_CCOEFF_NORMED)
-
-        # Actual matching using color images
-        result = cv2.matchTemplate(IMAGE, resized_base_image, cv2.TM_CCOEFF_NORMED)
-
-        #best match. // max_val = confidence
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
-        # get coordinates of the best match
-        top_left = max_loc
-        bottom_right = (top_left[0] + base_width, top_left[1] + base_height)
-
-        # calculating the absolute coordinate box of the match
-        absolute_top_left = (top_left[0] + REGION['left'], top_left[1] + REGION['top'])
-        absolute_bottom_right = (bottom_right[0] + REGION['left'], bottom_right[1] + REGION['top'])
-        
-        # calculating the center of that "match-box"
-        absolute_center_x = (absolute_top_left[0] + absolute_bottom_right[0]) // 2
-        absolute_center_y = (absolute_top_left[1] + absolute_bottom_right[1]) // 2
-        CENTER = {'x': absolute_center_x, 'y': absolute_center_y}
-        
-        # Verificar se está acima do threshold de confiança
-        if max_val >= threshold:
-            return {
-                'found': True,
-                'screenshot': screenshot,
-                'match': {
-                    'confidence': {
-                        'value': max_val,
-                        'threshold': threshold
-                    },
-                    'coordinates': {  # Representa a posição absoluta
-                        'top_left': absolute_top_left,
-                        'bottom_right': absolute_bottom_right,
-                        'center': CENTER
-                    },
-                }
-            }
-        else:            
-            return {
-                'found': False,
-                'screenshot': screenshot,
-                'match': {
-                    'confidence': {
-                        'value': max_val,
-                        'threshold': threshold
-                    },
-                    'coordinates': {  # Representa a posição absoluta
-                        'top_left': absolute_top_left,
-                        'bottom_right': absolute_bottom_right,
-                        'center': CENTER
-                    },
-                }
-            }
-
-
-    '''
-    shows your screenshot in a new window and wait for keypress to continue application
-    if you pass data arg, it will be displayed below the screenshot
-    example: self.show_screenshot(screenshot, ocr_result, title="--- ocr ---")
-    '''
-    def show_screenshot(self, screenshot, data=None, title="--- screenshot data ---"):
-        IMAGE = screenshot['image']
-        # Display the screenshot
-        if data:
-            # Define default values
-            base_font_scale = 1.0
-            font_thickness = 2
-            text_color = (255, 255, 255)  # White for data text
-            initial_text_color = (0, 255, 0)  # Green for initial text
-            
-            # Calculate the original width and height for the screenshot
-            original_width = IMAGE.shape[1]
-            original_height = IMAGE.shape[0]
-
-            # Split the data into lines
-            data_lines = data.split('\n')
-
-            # Calculate the maximum width for the title and data
-            max_text_width = max(
-                cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX, base_font_scale, font_thickness)[0][0],  # Width of title
-                *[cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, base_font_scale, font_thickness)[0][0] for line in data_lines]  # Width of each data line
-            )
-
-            # Use the maximum width calculated for the text image
-            new_width = max(max_text_width, original_width)
-
-            # Create a black image for the text with the new width
-            total_text_height = len(data_lines) * (30) + 50  # Approximate height needed for text
-            text_img = np.zeros((total_text_height + 40, new_width, 3), dtype=np.uint8)  # +40 for spacing
-
-            # Initial text position
-            y_offset = 40  # Starting Y position for the initial title
-
-            # Add initial text at the top in green
-            initial_text_size = cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX, base_font_scale, font_thickness)[0]
-            initial_text_x = (new_width - initial_text_size[0]) // 2  # Center the initial text
-            cv2.putText(text_img, title, (initial_text_x, y_offset), cv2.FONT_HERSHEY_SIMPLEX, base_font_scale, initial_text_color, font_thickness)
-
-            # Reset y_offset for data lines
-            y_offset += 40  # Move down to below the initial text
-
-            for line in data_lines:
-                # Render each line of text in the text image
-                text_x = (new_width - cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, base_font_scale, font_thickness)[0][0]) // 2  # Center the text
-                cv2.putText(text_img, line, (text_x, y_offset), cv2.FONT_HERSHEY_SIMPLEX, base_font_scale, text_color, font_thickness)
-                y_offset += 30  # Move down for the next line
-
-            # Combine the screenshot and the text image vertically
-            # Ensure that the screenshot remains the same size
-            combined_height = IMAGE.shape[0] + text_img.shape[0]
-            combined_img = np.zeros((combined_height, new_width, 3), dtype=np.uint8)  # Create an empty canvas with the new width
-            
-            # Place the screenshot at the top
-            combined_img[:original_height, :original_width] = IMAGE
-            
-            # Place the text image below the screenshot
-            combined_img[original_height:, :new_width] = text_img
-
-        else:
-            combined_img = IMAGE
-
-        # Show the combined image (screenshot + text if present)
-        cv2.imshow('Screenshot', combined_img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-
-    '''
-    result: return from self.find_image_in_screenshot()
-    Displays the result on screen. Only for debug purposes.
-    '''
-    def display_match_from_screenshot(self, result):
-        screenshot = result['screenshot']
-        IMAGE = screenshot['image']
-        REGION = screenshot['region']
-        IS_FOUND = result['found']
-        
-        # the coordinates must be relative to the screenshot, so we will convert them from absolute to relative
-        absolute_top_left = result['match']['coordinates']['top_left']
-        absolute_bottom_right = result['match']['coordinates']['bottom_right']
-        
-        relative_top_left = (
-            absolute_top_left[0] - REGION['left'],
-            absolute_top_left[1] - REGION['top']
-        )
-        
-        relative_bottom_right = (
-            absolute_bottom_right[0] - REGION['left'],
-            absolute_bottom_right[1] - REGION['top']
-        )
-        
-        # drawing a rectangle around the found template
-        cv2.rectangle(IMAGE, relative_top_left, relative_bottom_right, (0, 255, 0), 2)  # Green rectangle with 2px thickness
-        
-        # displaying the confidence level
-        cv2.putText(IMAGE, f"Found: {IS_FOUND}, Confidence: {result['match']['confidence']['value']:.2f}", (relative_top_left[0], relative_top_left[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-        
-        # Show the result
-        cv2.imshow("Matched Image", IMAGE)
-        cv2.waitKey(0)  # Wait for a key press
-        cv2.destroyAllWindows()
-
-
     # --- OCR RELATED -------------------------------------------------------
     
     '''

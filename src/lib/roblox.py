@@ -1,5 +1,6 @@
 # window management
 import pygetwindow as gw
+from pywinauto import mouse
 import psutil
 import win32process
 import win32gui
@@ -17,7 +18,7 @@ from lib.system import System
 class Roblox:
     
     def __init__(self):
-        self.TEMP_FULL_PRIVATE_SERVER = "https://www.roblox.com/games/15532962292/Sols-RNG-Era-9?privateServerLinkCode=83338549084739556308838773836658" # temporary hardcoded, should come from configs
+        self.TEMP_FULL_PRIVATE_SERVER = CONFIGURATION.roblox['private_server_link']  # temporary hardcoded, should come from configs
         self.TEMP_ROBLOX_CLOSE_INTERVAL = 10 # seconds
         
         self.ROBLOX_WINDOW_TITLE = "Roblox"
@@ -248,40 +249,58 @@ class Roblox:
     # returns ABSOLUTE position and center
     def get_play_button_position(self):
 
-        # obtaining roblox coordinates
-        ROBLOX = self.window()
-        ROBLOX_BOUNDS = ROBLOX['bounds']
-        x = ROBLOX_BOUNDS['x']
-        y = ROBLOX_BOUNDS['y']
-        width = ROBLOX_BOUNDS['width']
-        height = ROBLOX_BOUNDS['height']
 
-        # calculating center of roblox window
-        center_x = x + width / 2
-        center_y = y + height / 2
+        # nbew positions, transform this to fit with this class'p positions <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        # top = (self.selected_window.top + CLIENT_Y_OFFSET) + int(window_h / 1.7643)
+        # left = (self.selected_window.left + CLIENT_X_OFFSET) + int(window_w / 3.3437)
+        # bottom = self.selected_window.top + self.selected_window.height - CLIENT_Y_OFFSET # bottom of window
+        # right = (window_w - left)
 
-        # rectangle size that contains play button
-        button_width = width * 0.30  # Largura do botão de jogar
-        button_height = height * 0.20  # Altura do botão de jogar
+        # # obtaining roblox coordinates
+        # ROBLOX = self.window()
+        # ROBLOX_BOUNDS = ROBLOX['bounds']
+        # x = ROBLOX_BOUNDS['x']
+        # y = ROBLOX_BOUNDS['y']
+        # width = ROBLOX_BOUNDS['width']
+        # height = ROBLOX_BOUNDS['height']
 
-        # offsets
-        y_offset = height * 0.35
+        # # calculating center of roblox window
+        # center_x = x + width / 2
+        # center_y = y + height / 2
 
-        # calculates the relative position of the play button around the center, adjusted with offset
-        x1 = center_x - button_width / 2
-        y1 = center_y - button_height / 2 + y_offset
-        x2 = center_x + button_width / 2
-        y2 = center_y + button_height / 2 + y_offset
+        # # rectangle size that contains play button
+        # button_width = width * 0.30  # Largura do botão de jogar
+        # button_height = height * 0.20  # Altura do botão de jogar
+
+        # # offsets
+        # y_offset = height * 0.35
+
+        # # calculates the relative position of the play button around the center, adjusted with offset
+        # x1 = center_x - button_width / 2
+        # y1 = center_y - button_height / 2 + y_offset
+        # x2 = center_x + button_width / 2
+        # y2 = center_y + button_height / 2 + y_offset
         
-        # getting button center for click
-        center_button_x = (x1 + x2) / 2
-        center_button_y = (y1 + y2) / 2
+        # # getting button center for click
+        # center_button_x = (x1 + x2) / 2
+        # center_button_y = (y1 + y2) / 2
 
-        # return as dictionary
+        # # return as dictionary
+        # return {
+        #     'type': 'absolute',
+        #     'position': [[x1, y1], [x2, y2]],
+        #     'center': { 'x': center_button_x, 'y': center_button_y } # what the actual fuck?
+        # }
+        
         return {
-            'type': 'absolute',
-            'position': [[x1, y1], [x2, y2]],
-            'center': { 'x': center_button_x, 'y': center_button_y } # what the actual fuck?
+            'x': '',
+            'y': '',
+            'width': '',
+            'height': '',
+            'center': {
+                'x':'', 
+                'y':''
+            },
         }
     
     
@@ -385,9 +404,17 @@ class Roblox:
         ROBLOX = self.window()
         ROBLOX_WINDOW = ROBLOX['window']
         
+        if not ROBLOX_WINDOW._hWnd:
+            raise ValueError("Window handle (_hWnd) is not valid.")
+
+        # FIXME
+        # https://stackoverflow.com/a/79067711
+        # fuck you windows
+        mouse.move(coords=(-10000, 500))
+        
         # checks if its minimized
         if ROBLOX_WINDOW.isMinimized:
-            win32gui.ShowWindow(ROBLOX_WINDOW._hWnd, win32con.SW_RESTORE)
+            win32gui.ShowWindow(ROBLOX_WINDOW._hWnd, win32con.SW_SHOW)
         win32gui.SetForegroundWindow(ROBLOX_WINDOW._hWnd)
         return
     
@@ -544,31 +571,34 @@ class Roblox:
         PLAY_BUTTON_FOUND = False
         PLAY_BUTTON = None
         
+        # for i in range(1, MAX_ITERATIONS):
+        #     PLAY_BUTTON = self.get_play_button_position()
+
+        #     screenshot = System.screenshot(PLAY_BUTTON['position'][0], PLAY_BUTTON['position'][1])
+        #     ocr_result = System.ocr_from_screenshot(screenshot["image"])
+            
+        #     if show_screenshot:
+        #         System.show_screenshot(screenshot["image"], ocr_result.replace('\n','\\n'), title="--- ocr: wait for play button ---")
+            
+        #     # check if "play" is in the ocr result
+        #     if "play" in ocr_result.lower():  # Verifica sem case sensitivity
+        #         PLAY_BUTTON_FOUND = True
+        #         break
+            
+        #     print(f"Iteration {i}: Waiting for play button... (OCR: \"{ocr_result}\")")
+        #     await asyncio.sleep(INTERVAL_PER_ITERATION)
+            
+        # if not PLAY_BUTTON_FOUND:
+        #     raise Exception("PLAY_BUTTON: Play button was not found!")
+
+        # print(f"#{i} PLAY_BUTTON_FOUND: {PLAY_BUTTON_FOUND}")
+
+        # if click_when_found:
+        #     await self.click_play_button()
+        # return
+        
         for i in range(1, MAX_ITERATIONS):
             PLAY_BUTTON = self.get_play_button_position()
-
-            screenshot = System.screenshot(PLAY_BUTTON['position'][0], PLAY_BUTTON['position'][1])
-            ocr_result = System.ocr_from_screenshot(screenshot["image"])
-            
-            if show_screenshot:
-                System.show_screenshot(screenshot["image"], ocr_result.replace('\n','\\n'), title="--- ocr: wait for play button ---")
-            
-            # check if "play" is in the ocr result
-            if "play" in ocr_result.lower():  # Verifica sem case sensitivity
-                PLAY_BUTTON_FOUND = True
-                break
-            
-            print(f"Iteration {i}: Waiting for play button... (OCR: \"{ocr_result}\")")
-            await asyncio.sleep(INTERVAL_PER_ITERATION)
-            
-        if not PLAY_BUTTON_FOUND:
-            raise Exception("PLAY_BUTTON: Play button was not found!")
-
-        print(f"#{i} PLAY_BUTTON_FOUND: {PLAY_BUTTON_FOUND}")
-
-        if click_when_found:
-            await self.click_play_button()
-        return
             
             
     async def click_play_button(self):

@@ -264,6 +264,58 @@ class WindowSpy:
                 # self.tooltip("4", 200, 160, f'  Reverse: x: {reverse_x:.4f} y: {reverse_y:.4f}')
                 # self.tooltip("5", 200, 180, f'  X: {window_w} / {scaling_factor_x:.4f}')
                 # self.tooltip("6", 200, 200, f'  Y: {window_h} / {scaling_factor_y:.4f}')
+                                
+                def transform_to_absolute(top, left, bottom, right):
+                    return (
+                        int(top + self.selected_window.top + CLIENT_Y_OFFSET),
+                        int(left + self.selected_window.left + CLIENT_X_OFFSET),
+                        int(bottom + self.selected_window.top + CLIENT_Y_OFFSET),
+                        int(right + self.selected_window.left + CLIENT_X_OFFSET)
+                    )
+                    
+                # # biome region (big square)
+                # top = int(window_h / 1.2734)
+                # left = 0
+                
+                # @FIXME: bottom is mis-aligning. fix this
+                # bottom = self.selected_window.top + self.selected_window.height - CLIENT_Y_OFFSET
+                # right = (left + window_w/8) * 1
+                
+                # # chat button
+                # top = 0
+                # left = 0
+                # bottom = 70 # anchored to y, size is fixed
+                # right = 250 # anchored to x, size is fixed
+                
+                # # close collection
+                # top = 95
+                # left = 0
+                # bottom = (top + window_h/8) * 0.8 # anchored to y, size based on window
+                # right = (left + window_w/4) * 1 # anchored to x, size based on window
+                
+                # # entire inventory
+                # top =  int(window_h / 5.9886)
+                # left = int(window_w / 5.2183)
+                # bottom = (self.selected_window.top + self.selected_window.height - CLIENT_Y_OFFSET - top) * 1 # anchored to window. same distance as y
+                # right = (window_w - left) * 1 # anchored to window. same distance as x
+                
+                # # play button
+                # top = (self.selected_window.top + CLIENT_Y_OFFSET) + int(window_h / 1.7643)
+                # left = (self.selected_window.left + CLIENT_X_OFFSET) + int(window_w / 3.3437)
+                # bottom = self.selected_window.top + self.selected_window.height - CLIENT_Y_OFFSET # bottom of window
+                # right = (window_w - left)
+                
+                # # bottom = self.selected_window.top + window_h
+                # # right = (self.selected_window.left + CLIENT_X_OFFSET) + int(window_w / 1.4858)
+                
+                top, left, bottom, right = transform_to_absolute(top, left, bottom, right)                
+                
+                print(f'self selected window top: : {self.selected_window.top}, client y offset: {CLIENT_Y_OFFSET}, client h: {int(client_h)}, test top: {int(client_h / 1.1936)}')
+
+                self.tooltip("1", left, top, f'LT {left}, {top}')
+                self.tooltip("2", right, top, f'RT {right}, {top}')
+                self.tooltip("3", left, bottom, f'LB {left}, {bottom}')
+                self.tooltip("4", right, bottom, f'RB {right}, {bottom}')
 
                 
             elif self.selected_window and self.selected_window.isMinimized:
