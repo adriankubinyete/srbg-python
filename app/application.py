@@ -211,7 +211,7 @@ class Application:
         except Exception as e:
             print(f"Erro ao carregar a configuração: {e}")
             return None
-            
+        
     # ----------------------------------------------------------------------------------------------------
     # "generators"
     
@@ -229,7 +229,7 @@ class Application:
     # ----------------------------------------------------------------------------------------------------
     # main application setup
     
-    def setup_ui(self):           
+    def setup_ui(self):
         
         # Criação do Notebook para as abas (guia)
         notebook = ttk.Notebook(self.root)
@@ -252,6 +252,42 @@ class Application:
         # Criar o botão STOP (F3)
         stop_button = tk.Button(footer, text="F3 - STOP", command=self.stop_button)
         stop_button.pack(side="left", padx=5)
+        
+        # Espaço para os botões Import e Export
+        footer_right = tk.Frame(footer)
+        footer_right.pack(side="right")
+
+        # Botão e campo de entrada para Import
+        import_entry = tk.Entry(footer_right, width=15)
+        import_entry.pack(side="left", padx=5)
+        
+        def on_import_click():
+            """
+            Pega o conteúdo do Entry Import e passa para self.load_config().
+            """
+            content = import_entry.get()
+            if content:  # Verifica se tem algo para importar
+                self.load_config(content)
+        
+        import_button = tk.Button(footer_right, text="Import", command=on_import_click)
+        import_button.pack(side="left", padx=5)
+        
+        # Botão e campo de entrada para Export (somente leitura)
+        export_var = tk.StringVar()  # StringVar para controlar o conteúdo do Entry
+        export_entry = tk.Entry(footer_right, textvariable=export_var, width=15, state="readonly")
+        export_entry.pack(side="left", padx=5)
+        
+        def on_export_click():
+            """
+            Chama self.get_config() e coloca o resultado no Entry Export.
+            """
+            result = self.get_config()
+            export_entry.config(state="normal")  # Torna o entry editável temporariamente
+            export_var.set(result)  # Define o valor no entry
+            export_entry.config(state="readonly")  # Retorna para somente leitura
+
+        export_button = tk.Button(footer_right, text="Export", command=on_export_click)
+        export_button.pack(side="left", padx=5)
         
     def start_button(self):
         print('start pressed')

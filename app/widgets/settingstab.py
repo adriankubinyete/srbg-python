@@ -169,16 +169,12 @@ class SettingsTab:
                 config_to_update[last_key] = text_var.get() or None  # Atualize com o valor inserido (ou None se vazio)
 
             # Aqui você apenas imprime o dicionário reconstruído
-            print('-------------- RECT')
-            print(reconstructed_dict)
-            print('---------------- ORIG')
-            print(self.config)
             self.config = reconstructed_dict
 
 
         # Add a "Save" button at the bottom of the scrollable frame
-        save_button = tk.Button(scrollable_frame, text="Save", command=save_changes)
-        save_button.grid(row=scrollable_frame.grid_size()[1], column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+        save_button = tk.Button(parent_frame, text="Save", command=save_changes)
+        save_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
 
         # Ensure canvas resizes with the frame and adjusts the width of the inner frame
         def FrameWidth(event):
@@ -195,11 +191,3 @@ class SettingsTab:
 
         # Make canvas scroll delta functionality for mouse wheel (Capture anywhere in the canvas)
         canvas.bind_all("<MouseWheel>", _on_mouse_wheel)
-
-    # def _save_changes(self):
-    #     """
-    #     Saves all changes from text fields back to the config.
-    #     """
-    #     for text_var, parent_config, key in self.entry_refs:
-    #         parent_config[key] = text_var.get() or None
-    #     print("Config updated:", self.config)  # Debugging log or replace with actual saving logic
