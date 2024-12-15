@@ -11,8 +11,8 @@ class CheckboxTable:
         self.cell_border = cellbd  # Borda das células
         self.cell_relief = cellrelief  # Estilo da borda das células
 
-        # Armazenar as variáveis dos checkboxes para acesso futuro
-        self.check_vars = []
+        # Armazenar as variáveis dos checkboxes para acesso futuro (usando dicionário)
+        self.check_vars = {}
 
         # Criar o frame para a tabela (não mais um LabelFrame)
         self.table_frame = tk.Frame(self.parent_frame)
@@ -38,9 +38,9 @@ class CheckboxTable:
 
         # Criar as linhas da tabela
         for row_index, row_name in enumerate(self.rows):
-            self.add_row(row_index + 1, row_name)
+            self.add_row(row_name, row_index + 1)
 
-    def add_row(self, row_index, row_name):
+    def add_row(self, row_name, row_index):
         row_color = "#e2e8ec" if row_index % 2 == 0 else "#ffffff"
 
         # Criar uma nova linha com o nome da configuração
@@ -61,12 +61,39 @@ class CheckboxTable:
             cb.grid(row=row_index, column=col, padx=self.column_spacing, pady=self.row_spacing, sticky="nsew")
             checkbuttons.append(var)
 
-        # Armazenar as variáveis de cada linha (para acesso futuro)
-        self.check_vars.append(checkbuttons)
+        # Armazenar as variáveis de cada linha (para acesso futuro, usando o nome da linha como chave)
+        self.check_vars[row_name] = checkbuttons
 
-    def get_configurations(self):
+    def get_values(self):
         """
-        Retorna os valores de todos os checkboxes em formato de lista de listas.
-        Cada lista interna contém os valores (True/False) dos checkboxes para uma linha.
+        Retorna os valores de todos os checkboxes em formato de dicionário.
+        A chave do dicionário é o nome da linha e o valor é uma lista de valores (True/False) para cada coluna.
         """
-        return [[var.get() for var in row] for row in self.check_vars]
+        return {row_name: [var.get() for var in checkbuttons] for row_name, checkbuttons in self.check_vars.items()}
+
+    def set_values(self, config_values):
+        """
+        Atualiza os valores dos checkboxes a partir de um dicionário de configurações.
+        Verifica se as chaves e a quantidade de valores são compatíveis antes de atualizar.
+        :param config_values: Um dicionário onde a chave é o nome da linha e o valor é uma lista de valores booleanos.
+        """
+        print('set values was called')
+        
+        # Verificar se as chaves no config_values são compatíveis com as linhas da tabela
+        for row_key, row_values in config_values.items():
+            if row_key not in self.check_vars:
+                print(f"Erro: A chave '{row_key}' não existe na tabela.")
+                continue
+            
+            # Verificar se o número de checkboxes na linha corresponde ao número de valores fornecidos
+            if len(row_values) != len(self.check_vars[row_key]):
+                print(f"Erro: A quantidade de valores para a chave '{row_key}' não corresponde ao número de checkboxes.")
+                continue
+            
+            # Atualizar os valores dos checkboxes
+            for col, value in enumerate(row_values):
+                # Atualiza o valor da variável associada ao checkbutton
+                self.check_vars[row_key][col].set(value)
+
+        # Forçar o Tkinter a atualizar a interface após a mudança
+        self.table_frame.update_idletasks()
