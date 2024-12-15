@@ -179,6 +179,7 @@ class Application:
         self.add_tab(notebook, "Credits", self.setup_credits_tab)
         
         notebook.select(None) # fuck off
+        self.root.select(None)
     
     # ----------------------------------------------------------------------------------------------------
     # tabs content
